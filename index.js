@@ -1,5 +1,10 @@
+module.exports = standard
+module.exports.format = standardFormat
+
 var cp = require('child_process')
+var esformatter = require('esformatter')
 var findRoot = require('find-root')
+var fs = require('fs')
 var glob = require('glob')
 var Minimatch = require('minimatch').Minimatch
 var parallel = require('run-parallel')
@@ -14,6 +19,8 @@ var JSCS_REPORTER_VERBOSE = path.join(__dirname, 'lib', 'jscs-reporter-verbose.j
 var ESLINT_RC = path.join(__dirname, 'rc', '.eslintrc')
 var ESLINT_REPORTER = path.join(__dirname, 'lib', 'eslint-reporter.js')
 var ESLINT_REPORTER_VERBOSE = path.join(__dirname, 'lib', 'eslint-reporter-verbose.js')
+
+var ESFORMATTER_CONFIG = require(path.join(__dirname, 'rc', 'esformatter.json'))
 
 var DEFAULT_IGNORE = [
   'node_modules/**',
@@ -30,15 +37,15 @@ var COL_RE = /.*?:\d+:(\d+)/
 
 /**
  * JavaScript Standard Style
+ *
  * @param {Object} opts                        options object
  * @param {string|Array.<String>} opts.ignore  files to ignore
- * @param {boolean} opts.bare                  show raw linter output (for debugging)
  * @param {string} opts.cwd                    current working directory
  * @param {Array.<string>} files               files to check
  * @param {boolean} opts.stdin                 check text from stdin instead of filesystem
  * @param {boolean} opts.verbose               show error codes
  */
-module.exports = function standard (opts) {
+function standard (opts) {
   if (!opts) opts = {}
   var errors = []
 
@@ -164,13 +171,6 @@ module.exports = function standard (opts) {
   }
 
   function printErrors () {
-    if (opts.bare) {
-      errors.forEach(function (str) {
-        console.error(str)
-      })
-      return
-    }
-
     console.error('Error: Code style check failed:')
     var unexpectedOutput = []
     var errMap = {}
@@ -216,6 +216,25 @@ module.exports = function standard (opts) {
 
     process.exit(1)
   }
+}
+
+/**
+ * Automatically format code into JavaScript Standard Style
+ *
+ * @param {Object} opts                        options object
+ * @param {string|Array.<String>} opts.ignore  files to ignore
+ * @param {string} opts.cwd                    current working directory
+ * @param {Array.<string>} files               files to check
+ * @param {boolean} opts.stdin                 check text from stdin instead of filesystem
+ */
+function standardFormat (opts) {
+  // TODO: support multiple files
+  // TODO: support stdin
+  var filename = opts.files[0]
+
+  var source = fs.readFileSync(filename)
+  var result = esformatter.format(source, ESFORMATTER_CONFIG)
+  fs.writeFileSync(filename, result)
 }
 
 function error (err) {

@@ -4,10 +4,20 @@ var minimist = require('minimist')
 var standard = require('../')
 
 var argv = minimist(process.argv.slice(2), {
-  boolean: [ 'help', 'bare', 'verbose', 'version' ],
   alias: {
+    format: 'f',
     help: 'h',
     verbose: 'v'
+  },
+  boolean: [
+    'format',
+    'help',
+    'stdin',
+    'verbose',
+    'version'
+  ],
+  default: {
+    stdin: !process.stdin.isTTY
   }
 })
 
@@ -34,10 +44,12 @@ if (argv.version) {
   process.exit(0)
 }
 
-standard({
-  bare: argv.bare,
+var opts = {
   cwd: process.cwd(),
   files: argv._,
-  stdin: !process.stdin.isTTY,
+  stdin: argv.stdin,
   verbose: argv.verbose
-})
+}
+
+if (argv.format) standard.format(opts)
+else standard(opts)
